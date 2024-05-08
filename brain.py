@@ -2,6 +2,10 @@ import pygame
 import random
 import csv
 # import serial
+import os
+
+# Cambiar el directorio de trabajo al directorio del script
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 def readCsv():
     with open('bestScores.csv') as csv_file:
