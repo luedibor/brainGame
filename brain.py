@@ -1,6 +1,8 @@
 import pygame
 import random
 import csv
+import time
+from pylsl import StreamInlet, resolve_bypred
 # import serial
 import os
 
@@ -188,11 +190,6 @@ def draw_text(text, font, color, x, y):
     text_rect.center = (x, y)
     screen.blit(text_surface, text_rect)
 
-try:
-    ser = serial.Serial('COM6', 1000, timeout=100)
-except:
-    pass
-
 font = pygame.font.Font(None, 36)
 fontTitle = pygame.font.Font(None, 144)
 
@@ -223,7 +220,27 @@ explosions = []
 
 data = readCsv()
 
+streams = resolve_bypred('name', 'openvibeMarkers', timeout=1)
+
+while len(streams) == 0:
+    print("Conexión con OpenViBE fallida. Intentando de nuevo...")
+    time.sleep(2)
+    streams = resolve_bypred('name', 'openvibeMarkers', timeout=1)
+
+print("Conexión con OpenViBE establecida :D")
+
+# Crear un inlet para el stream de marcadores
+inlet = StreamInlet(streams[0])
+
 while running:
+    #try:
+    marker, timestamp = inlet.pull_sample()
+    #if marker:
+    #    print("Marcador de OpenViBE:", marker[0])
+        #time.sleep(0.1)  # Puedes ajustar este valor para controlar la velocidad de visualización
+    #except KeyboardInterrupt:
+    #    print("Saliendo...")
+
     if not player.alive and player.score != 0 and newHighScoreIndex < 0:
         newHighScoreIndex = checkNewHighScore()
 
@@ -247,21 +264,9 @@ while running:
         if random.randrange(1, 11) == 5:
             powerups.insert(1, Sprite("ammo1.png", "powerup"))
 
-    if player.alive and arduino:
-        bytes_data = ser.readline()
-        string_data = bytes_data.decode('utf-8')
-        number = int(string_data)
-        player.pos_y = number * screen.get_height() / 1024
-        if player.pos_y >= screen.get_height():
-            player.pos_y = screen.get_height() + player.image.get_height()
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_c:
-                    print(arduino)
-                    arduino = not arduino
         if event.type == pygame.KEYDOWN and not player.alive:
             if event.key == pygame.K_UP and not dashboard:
                 if newHighScoreIndex >= 0:
@@ -289,8 +294,6 @@ while running:
                 elif newHighScoreIndex >= 0:
                     data["name"].insert(newHighScoreIndex, "".join([chr(letter) for letter in newName]))
                     data["name"].pop()
-                    for score in data["score"]:
-                        print("HOLA ", score)
                     writeToCsv()
                     player.score = 0
                     newHighScoreIndex = -1
@@ -347,8 +350,8 @@ while running:
             powerup.render()
             powerup.updatePos(dt)
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_SPACE]:
+    # keys = pygame.key.get_pressed()
+    if marker[0] == 33031:
         player.pos_y -= 250 * dt
         if player.pos_y <= 0:
             player.pos_y = 0
