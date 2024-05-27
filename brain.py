@@ -6,6 +6,7 @@ from pylsl import StreamInlet, resolve_bypred
 # import serial
 import os
 
+
 # Cambiar el directorio de trabajo al directorio del script
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
